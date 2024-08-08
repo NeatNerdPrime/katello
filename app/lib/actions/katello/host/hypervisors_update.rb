@@ -33,6 +33,8 @@ module Actions
             end
           end
 
+          return if @duplicate_uuid_hypervisors.empty?
+
           @duplicate_uuid_hypervisors.each do |hypervisor, existing_host|
             fail _("Host creation was skipped for %s because it shares a BIOS UUID with %s. " \
                    "To report this hypervisor, override its dmi.system.uuid fact or set 'candlepin.use_system_uuid_for_matching' " \
@@ -120,8 +122,8 @@ module Actions
         end
 
         def validate_host_organization(host, organization)
-          if host.organization_id.nil? || host.organization_id != organization
-            fail _("Host '%{name}' does not belong to an organization") % {:name => host.name} unless host.organization
+          if (host.organization_id.nil? || host.organization_id != organization) && !host.organization
+            fail _("Host '%{name}' does not belong to an organization") % {:name => host.name}
           end
         end
 
@@ -175,8 +177,8 @@ module Actions
         end
 
         def update_facts(uuid, host)
-          if @candlepin_attributes.key?(uuid)
-            ::Katello::Host::SubscriptionFacet.update_facts(host, @candlepin_attributes[uuid][:facts]) unless @candlepin_attributes[uuid][:facts].blank?
+          if @candlepin_attributes.key?(uuid) && !@candlepin_attributes[uuid][:facts].blank?
+            ::Katello::Host::SubscriptionFacet.update_facts(host, @candlepin_attributes[uuid][:facts])
           end
         end
 

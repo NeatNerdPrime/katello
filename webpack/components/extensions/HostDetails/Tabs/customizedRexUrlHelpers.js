@@ -33,6 +33,13 @@ export const katelloPackageInstallBySearchUrl = ({ hostname, hostSearch, search 
   inputs: { [PACKAGE_SEARCH_QUERY]: search },
 });
 
+export const katelloPackageRemoveBySearchUrl = ({ hostname, hostSearch, search }) => createJob({
+  hostname,
+  hostSearch,
+  feature: REX_FEATURES.KATELLO_PACKAGES_REMOVE_BY_SEARCH,
+  inputs: { [PACKAGES_SEARCH_QUERY]: search },
+});
+
 export const katelloPackageUpdateUrl = ({ hostname, packageName }) => createJob({
   hostname,
   feature: REX_FEATURES.KATELLO_PACKAGE_UPDATE,
@@ -54,8 +61,9 @@ export const resolveTraceUrl = ({ hostname, search }) => createJob({
   inputs: { [TRACES_SEARCH_QUERY]: search },
 });
 
-export const errataInstallUrl = ({ hostname, search }) => createJob({
+export const errataInstallUrl = ({ hostname, search, hostSearch }) => createJob({
   hostname,
+  hostSearch,
   feature: REX_FEATURES.KATELLO_HOST_ERRATA_INSTALL_BY_SEARCH,
   inputs: { [ERRATA_SEARCH_QUERY]: search },
 });

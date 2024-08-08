@@ -144,8 +144,8 @@ module Katello
 
       relation = relation.where(Katello::Content.table_name => {:name => params[:name]}) if params[:name].present?
       # ignore with_custom if repository_type is specified
-      if params[:repository_type].blank?
-        relation = relation.redhat unless ::Foreman::Cast.to_bool(params[:with_custom])
+      if params[:repository_type].blank? && !::Foreman::Cast.to_bool(params[:with_custom])
+        relation = relation.redhat
       end
       index_relation_with_consumable_overrides(relation)
     end
@@ -240,18 +240,17 @@ module Katello
     end
 
     def sort_score(pc) # sort order for enabled
-      score = if pc.enabled_content_override&.value == "1"
-                4 # overridden to enabled
-              elsif pc.enabled_content_override.nil? && pc.enabled
-                3 # enabled
-              elsif pc.enabled_content_override.nil? && !pc.enabled
-                2 # disabled
-              elsif pc.enabled_content_override&.value == "0"
-                1 # overridden to disabled
-              else
-                0
-              end
-      score
+      if pc.enabled_content_override&.value == "1"
+        4 # overridden to enabled
+      elsif pc.enabled_content_override.nil? && pc.enabled
+        3 # enabled
+      elsif pc.enabled_content_override.nil? && !pc.enabled
+        2 # disabled
+      elsif pc.enabled_content_override&.value == "0"
+        1 # overridden to disabled
+      else
+        0
+      end
     end
 
     def custom_sort_results(unsorted_relation)

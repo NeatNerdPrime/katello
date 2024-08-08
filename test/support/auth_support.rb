@@ -25,7 +25,7 @@ module Katello
     end
 
     def resource_type_from_name(name)
-      resource_name = name.to_s.split('_')[1..-1].join('_').singularize
+      resource_name = name.to_s.split('_')[1..].join('_').singularize
       mapping = {
         "capsule_content" => "SmartProxy",
         "manifest" => "Katello::Subscription",
@@ -51,9 +51,10 @@ module Katello
         user.update!(organizations: organizations) unless organizations.blank?
         user.update!(locations: locations) unless locations.blank?
 
-        actual_permissions = if permissions.is_a?(Hash)
+        actual_permissions = case permissions
+                             when Hash
                                [permissions]
-                             elsif permissions.is_a?(Array)
+                             when Array
                                permissions.collect do |perm|
                                  if perm.is_a?(Hash)
                                    perm

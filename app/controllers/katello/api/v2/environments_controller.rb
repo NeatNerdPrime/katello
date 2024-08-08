@@ -108,8 +108,7 @@ module Katello
       update_params[:name] = params[:environment][:new_name] if params[:environment][:new_name]
       @environment.update!(update_params)
       if update_params[:registry_name_pattern] || update_params[:registry_unauthenticated_pull]
-        task = send(async ? :async_task : :sync_task, ::Actions::Katello::Environment::PublishRepositories,
-                    @environment, content_type: Katello::Repository::DOCKER_TYPE)
+        task = send(async ? :async_task : :sync_task, ::Actions::Katello::Environment::PublishContainerRepositories, @environment)
       end
 
       if params.include?(:async) && async && task
@@ -189,8 +188,7 @@ module Katello
         attrs = [:name, :description, :registry_name_pattern, :registry_unauthenticated_pull]
       end
       attrs << :label if params[:action] == "create"
-      parms = params.require(:environment).permit(*attrs)
-      parms
+      params.require(:environment).permit(*attrs)
     end
 
     def find_content_view

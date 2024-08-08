@@ -259,6 +259,7 @@ module Katello
     def facts
       User.current = User.anonymous_admin
       @host.update_candlepin_associations(rhsm_params)
+      update_environments_from_facts(params[:environments]) if params[:environments]
       update_host_registered_through(@host, request.headers)
       @host.refresh_statuses([::Katello::RhelLifecycleStatus])
       render :json => {:content => _("Facts successfully updated.")}, :status => :ok
@@ -404,6 +405,18 @@ module Katello
       activation_keys
     end
 
+    def update_environments_from_facts(param_environments)
+      return if param_environments.blank?
+      new_envs = param_environments.map do |env|
+        get_content_view_environment("cp_id", env['id'])
+      end
+      new_envs.compact!
+      Rails.logger.debug "Setting new content view environments for host #{@host.to_label}: #{new_envs.map(&:label)}"
+      @host.content_facet.content_view_environments = new_envs
+    rescue ::Katello::Errors::MultiEnvironmentNotSupportedError => e
+      raise HttpErrors::BadRequest, e.message
+    end
+
     def get_content_view_environment(key, value)
       cve = nil
       if value
@@ -457,8 +470,8 @@ module Katello
     end
 
     def authorize_client_or_admin
-      unless client_authorized?
-        deny_access unless authorize
+      if !client_authorized? && !authorize
+        deny_access
       end
     end
 

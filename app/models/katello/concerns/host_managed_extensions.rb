@@ -517,14 +517,18 @@ module Katello
         when 'remove'
           return [] if search.empty?
 
-          installed_packages.search_for(search).distinct.pluck(:name)
+          yum_removable = installed_packages.search_for(search).distinct.pluck(:name)
+          if yum_removable.empty?
+            fail N_("Cannot remove package(s): This host does not have any installed packages matching the search term '%s'.") % search
+          end
+          yum_removable
         when 'update'
           return [] if search.empty?
 
           versions_by_name_arch = {}
           if versions.present?
             JSON.parse(versions).each do |nvra|
-              nvra =~ /([^\.]*)-[-\.\w]*\.(\w+)/
+              nvra =~ /([^.]*)-[-.\w]*\.(\w+)/
               versions_by_name_arch[[Regexp.last_match(1), Regexp.last_match(2)]] = nvra
             end
           end
@@ -570,7 +574,11 @@ module Katello
       end
 
       def advisory_ids(search:)
-        ::Katello::Erratum.installable_for_hosts([self]).search_for(search).pluck(:errata_id)
+        ids = ::Katello::Erratum.installable_for_hosts([self]).search_for(search).pluck(:errata_id)
+        if ids.empty?
+          fail _("Cannot install errata: No installable errata found for search term '%s'") % search
+        end
+        ids
       end
 
       def filtered_entitlement_quantity_consumed(pool)

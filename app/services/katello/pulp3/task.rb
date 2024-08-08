@@ -39,6 +39,7 @@ module Katello
       #needed for serialization in dynflow
 
       attr_reader :pulp_data
+
       delegate :[], :key?, :dig, :to_hash, :to => :task_data
 
       def initialize(smart_proxy, data)
@@ -105,9 +106,10 @@ module Katello
       end
 
       def error
-        if task_data[:state] == CANCELED
+        case task_data[:state]
+        when CANCELED
           _("Task canceled")
-        elsif task_data[:state] == FAILED
+        when FAILED
           if task_data[:error][:description].blank?
             _("Pulp task error")
           else

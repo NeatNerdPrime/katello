@@ -173,3 +173,24 @@ Rails/RedundantForeignKey:
 
 Rails/UniqueValidationWithoutIndex:
   Enabled: true
+
+Style/TrailingCommaInHashLiteral:
+  Enabled: true
+
+Style/SingleArgumentDig:
+  Enabled: false
+
+Style/RedundantBegin:
+  Enabled: false
+
+Style/ExplicitBlockArgument:
+  Enabled: false
+
+Style/GlobalStdStream:
+  Enabled: false
+
+Style/RedundantFileExtensionInRequire:
+  Enabled: false
+
+Lint/MixedRegexpCaptureTypes:
+  Enabled: false

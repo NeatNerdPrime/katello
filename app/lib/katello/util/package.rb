@@ -75,8 +75,8 @@ module Katello
         vrea =  [package[:version], package[:release]].compact.join('-')
         vrea = vrea + '.' + package[:arch] unless package[:arch].nil?
         vrea = vrea + '.' + package[:suffix] unless package[:suffix].nil?
-        unless package[:epoch].nil?
-          vrea = package[:epoch] + ':' + vrea if package[:epoch].to_i != 0 || include_zero_epoch
+        if !package[:epoch].nil? && (package[:epoch].to_i != 0 || include_zero_epoch)
+          vrea = package[:epoch] + ':' + vrea
         end
         vrea
       end
@@ -135,7 +135,7 @@ module Katello
       end
 
       def self.valid_package_characters
-        /[^abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\-\.\_\+\,]+/
+        /[^abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\-._+,]+/
       end
 
       def self.setup_shared_unique_filter(repoids, search_mode, search_results)

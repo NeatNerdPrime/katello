@@ -84,6 +84,10 @@ module Katello
 
     before_create :assign_unique_label
 
+    def acs_compatible_repositories
+      repositories.has_url.not_uln.library
+    end
+
     def orphaned?
       self.pool_products.empty?
     end
@@ -122,13 +126,12 @@ module Katello
       options = {} if options.nil?
 
       hash = super(options.merge(:except => [:cp_id, :id]))
-      hash = hash.merge(:multiplier => self.multiplier,
+      hash.merge(:multiplier => self.multiplier,
                         :attributes => self.attrs,
                         :id => self.cp_id,
                         :sync_plan_name => self.sync_plan ? self.sync_plan.name : nil,
                         :sync_state => self.sync_state,
                         :last_sync => self.last_sync)
-      hash
     end
 
     def redhat?
@@ -168,8 +171,8 @@ module Katello
       self.label = Util::Model.labelize(self.name) if self.label.blank?
 
       # if the object label is already being used in this org, append the id to make it unique
-      if Product.all_in_org(self.organization).where("#{Katello::Product.table_name}.label = ?", self.label).count > 0
-        self.label = self.label + "_" + self.cp_id unless self.cp_id.blank?
+      if Product.all_in_org(self.organization).where("#{Katello::Product.table_name}.label = ?", self.label).count > 0 && !self.cp_id.blank?
+        self.label = self.label + "_" + self.cp_id
       end
     end
 

@@ -162,8 +162,20 @@ module Katello
         end
       end
 
+      def candlepin_environments_cp_ids
+        candlepin_environments.map { |e| e[:id] }
+      end
+
       def content_view_environments
         self.host.content_facet.try(:content_view_environments)
+      end
+
+      def consumer_cve_order_from_candlepin
+        Katello::Resources::Candlepin::Consumer.get(uuid)['environments'].map { |e| e['id'] }
+      end
+
+      def cves_ordered_correctly?
+        consumer_cve_order_from_candlepin == candlepin_environments_cp_ids
       end
 
       def organization
@@ -229,10 +241,8 @@ module Katello
         setting_fact = Setting[:register_hostname_fact]
         only_use_custom_fact = Setting[:register_hostname_fact_strict_match]
 
-        if !setting_fact.blank? && !facts[setting_fact].blank?
-          if only_use_custom_fact || ::Host.where(:name => setting_fact.downcase).any?
-            facts[setting_fact]
-          end
+        if !setting_fact.blank? && !facts[setting_fact].blank? && (only_use_custom_fact || ::Host.where(:name => setting_fact.downcase).any?)
+          facts[setting_fact]
         end
       end
 

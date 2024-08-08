@@ -31,6 +31,13 @@ const runCommandParams = ({ hostname, command }) =>
     feature: REX_FEATURES.RUN_COMMAND,
   });
 
+const uploadProfileParams = ({ hostname }) =>
+  baseParams({
+    hostname,
+    inputs: {},
+    feature: REX_FEATURES.KATELLO_UPLOAD_PROFILE,
+  });
+
 // used when we know the package name
 const katelloPackageInstallParams = ({ hostname, packageName }) =>
   baseParams({
@@ -58,9 +65,12 @@ const katelloPackageRemoveParams = ({ hostname, packageName }) =>
     feature: REX_FEATURES.KATELLO_PACKAGE_REMOVE,
   });
 
-const katelloPackagesRemoveParams = ({ hostname, search, descriptionFormat }) =>
+const katelloPackageRemoveBySearchParams = ({
+  hostname, hostSearch, search, descriptionFormat,
+}) =>
   baseParams({
     hostname,
+    hostSearch,
     inputs: { [PACKAGES_SEARCH_QUERY]: search },
     feature: REX_FEATURES.KATELLO_PACKAGES_REMOVE_BY_SEARCH,
     descriptionFormat,
@@ -98,11 +108,13 @@ const katelloTracerResolveParams = ({ hostname, search }) =>
   });
 
 const katelloHostErrataInstallParams = ({
-  hostname, search,
+  hostname, hostSearch, search, descriptionFormat,
 }) => baseParams({
   hostname,
+  hostSearch,
   inputs: { [ERRATA_SEARCH_QUERY]: search },
   feature: REX_FEATURES.KATELLO_HOST_ERRATA_INSTALL_BY_SEARCH,
+  descriptionFormat,
 });
 
 const katelloModuleStreamActionsParams = ({ hostname, action, moduleSpec }) =>
@@ -136,6 +148,18 @@ export const runCommand = ({ hostname, command, handleSuccess }) => post({
   key: REX_JOB_INVOCATIONS_KEY,
   url: foremanApi.getApiUrl('/job_invocations'),
   params: runCommandParams({ hostname, command }),
+  handleSuccess: (response) => {
+    showRexToast(response);
+    if (handleSuccess) handleSuccess(response);
+  },
+  errorToast,
+});
+
+export const uploadProfile = ({ hostname, handleSuccess }) => post({
+  type: API_OPERATIONS.POST,
+  key: REX_JOB_INVOCATIONS_KEY,
+  url: foremanApi.getApiUrl('/job_invocations'),
+  params: uploadProfileParams({ hostname }),
   handleSuccess: (response) => {
     showRexToast(response);
     if (handleSuccess) handleSuccess(response);
@@ -177,11 +201,15 @@ export const removePackage = ({ hostname, packageName }) => post({
   errorToast,
 });
 
-export const removePackages = ({ hostname, search, descriptionFormat }) => post({
+export const removePackagesBySearch = ({
+  hostname, hostSearch, search, descriptionFormat,
+}) => post({
   type: API_OPERATIONS.POST,
   key: REX_JOB_INVOCATIONS_KEY,
   url: foremanApi.getApiUrl('/job_invocations'),
-  params: katelloPackagesRemoveParams({ hostname, search, descriptionFormat }),
+  params: katelloPackageRemoveBySearchParams({
+    hostname, hostSearch, search, descriptionFormat,
+  }),
   handleSuccess: showRexToast,
   errorToast,
 });
@@ -218,13 +246,13 @@ export const resolveTraces = ({ hostname, search }) => post({
 });
 
 export const installErrata = ({
-  hostname, search,
+  hostname, hostSearch, search, descriptionFormat,
 }) => post({
   type: API_OPERATIONS.POST,
   key: REX_JOB_INVOCATIONS_KEY,
   url: foremanApi.getApiUrl('/job_invocations'),
   params: katelloHostErrataInstallParams({
-    hostname, search,
+    hostname, search, hostSearch, descriptionFormat,
   }),
   handleSuccess: showRexToast,
   errorToast,

@@ -363,7 +363,7 @@ Foreman::Plugin.register :katello do
         type: :boolean,
         default: false,
         full_name: N_('Allow multiple content views'),
-        description: N_("Allow a host to be registered to multiple content view environments with 'subscription-manager register --environments'.") # TODO: update this description when AKs support this setting as well
+        description: N_("Allow a host to be assigned to multiple content view environments with 'subscription-manager register --environments' or 'subscription-manager environments --set'.") # TODO: update this description when AKs support this setting as well
 
       setting 'content_default_http_proxy',
         type: :string,
@@ -643,8 +643,8 @@ Foreman::Plugin.register :katello do
       setting 'remote_execution_prefer_registered_through_proxy',
         type: :boolean,
         default: false,
-        full_name: N_('Prefer registered through proxy for remote execution'),
-        description: N_('Prefer using a proxy to which a host is registered when using remote execution')
+        full_name: N_('Prefer registered through Smart Proxy for remote execution'),
+        description: N_('Prefer using a Smart Proxy to which a host is registered when using remote execution')
 
       setting 'delete_repo_across_cv',
         type: :boolean,

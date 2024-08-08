@@ -32,6 +32,8 @@ module Katello
 
     EXPORTABLE_TYPES = [YUM_TYPE, FILE_TYPE, ANSIBLE_COLLECTION_TYPE, DOCKER_TYPE, DEB_TYPE].freeze
 
+    ALLOWED_UPDATE_FIELDS = ['version_href', 'last_indexed'].freeze
+
     define_model_callbacks :sync, :only => :after
 
     belongs_to :root, :inverse_of => :repositories, :class_name => "Katello::RootRepository"
@@ -119,8 +121,10 @@ module Katello
 
     before_validation :set_pulp_id
     before_validation :set_container_repository_name, :unless => :skip_container_name?
+    before_update :prevent_updates, :unless => :allow_updates?
 
     scope :has_url, -> { joins(:root).where.not("#{RootRepository.table_name}.url" => nil) }
+    scope :not_uln, -> { joins(:root).where("#{RootRepository.table_name}.url NOT LIKE 'uln%'") }
     scope :on_demand, -> { joins(:root).where("#{RootRepository.table_name}.download_policy" => ::Katello::RootRepository::DOWNLOAD_ON_DEMAND) }
     scope :immediate, -> { joins(:root).where("#{RootRepository.table_name}.download_policy" => ::Katello::RootRepository::DOWNLOAD_IMMEDIATE) }
     scope :non_immediate, -> { joins(:root).where.not("#{RootRepository.table_name}.download_policy" => ::Katello::RootRepository::DOWNLOAD_IMMEDIATE) }
@@ -179,7 +183,7 @@ module Katello
              :deb_components, :deb_architectures, :ssl_ca_cert_id, :ssl_ca_cert, :ssl_client_cert, :ssl_client_cert_id,
              :ssl_client_key_id, :os_versions, :ssl_client_key, :ignorable_content, :description, :include_tags, :exclude_tags,
              :ansible_collection_requirements, :ansible_collection_auth_url, :ansible_collection_auth_token,
-             :http_proxy_policy, :http_proxy_id, :to => :root
+             :http_proxy_policy, :http_proxy_id, :prevent_updates, :to => :root
 
     delegate :content_id, to: :root, allow_nil: true
     delegate :repository_type, to: :root
@@ -345,9 +349,10 @@ module Katello
     def content_counts
       content_counts = {}
       RepositoryTypeManager.defined_repository_types[content_type].content_types_to_index.each do |content_type|
-        if content_type&.model_class::CONTENT_TYPE == DockerTag::CONTENT_TYPE
+        case content_type&.model_class::CONTENT_TYPE
+        when DockerTag::CONTENT_TYPE
           content_counts[DockerTag::CONTENT_TYPE] = docker_tags.count
-        elsif content_type&.model_class::CONTENT_TYPE == GenericContentUnit::CONTENT_TYPE
+        when GenericContentUnit::CONTENT_TYPE
           content_counts[content_type.content_type] = content_type&.model_class&.in_repositories(self)&.where(:content_type => content_type.content_type)&.count
         else
           content_counts[content_type.label] = content_type&.model_class&.in_repositories(self)&.count
@@ -791,6 +796,8 @@ module Katello
           return true
         elsif !self.custom? && self.redhat_deletable?(remove_from_content_view_versions)
           return true
+        elsif Setting.find_by(name: 'delete_repo_across_cv')&.value
+          return true
         else
           errors.add(:base, _("Repository cannot be deleted since it has already been included in a published Content View. " \
                               "Please delete all Content View versions containing this repository before attempting to delete it "\
@@ -1007,6 +1014,7 @@ module Katello
         repository_type.index_additional_data_proc&.call(self)
       end
       self.update!(last_indexed: DateTime.now)
+
       true
     end
 
@@ -1046,6 +1054,12 @@ module Katello
         manifest.destroy
       end
       DockerMetaTag.cleanup_tags
+    end
+
+    def allow_updates?
+      # allow the update if this repo is not in the default view
+      return true unless in_default_view?
+      root.allow_updates?(::Katello::Repository::ALLOWED_UPDATE_FIELDS)
     end
 
     apipie :class, desc: "A class representing #{model_name.human} object" do

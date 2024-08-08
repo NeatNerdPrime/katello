@@ -5,6 +5,7 @@ import { Modal, Button, Alert, Checkbox, TextContent, Text, TextVariants } from 
 import { translate as __ } from 'foremanReact/common/I18n';
 import { STATUS } from 'foremanReact/constants';
 import { useAPI } from 'foremanReact/common/hooks/API/APIHooks';
+import { useUrlParams } from 'foremanReact/components/PF4/TableIndexPage/Table/TableHooks';
 import { selectAPIStatus } from 'foremanReact/redux/API/APISelectors';
 import EnvironmentPaths from '../../../../../scenes/ContentViews/components/EnvironmentPaths/EnvironmentPaths';
 import { ENVIRONMENT_PATHS_KEY } from '../../../../../scenes/ContentViews/components/EnvironmentPaths/EnvironmentPathConstants';
@@ -32,7 +33,9 @@ const ChangeHostCVModal = ({
   hostId,
   contentSourceId,
   hostName,
+  multiEnv,
 }) => {
+  const { content_view_assignment: initialCVModalOpen } = useUrlParams();
   const [selectedEnvForHost, setSelectedEnvForHost]
     = useState([]);
 
@@ -60,6 +63,13 @@ const ChangeHostCVModal = ({
     setSelectedCVForHost(null);
     setSelectedEnvForHost([]);
     closeModal();
+  };
+
+  const handleCancel = () => {
+    handleModalClose();
+    if (initialCVModalOpen) {
+      window.history.back();
+    }
   };
 
   const selectedEnv = selectedEnvForHost?.[0];
@@ -132,8 +142,8 @@ const ChangeHostCVModal = ({
     >
       {__('Save')}
     </Button>,
-    <Button key="cancel" ouiaId="change-host-cv-modal-cancel-button" variant="link" onClick={handleModalClose}>
-      Cancel
+    <Button key="cancel" ouiaId="change-host-cv-modal-cancel-button" variant="link" onClick={handleCancel}>
+      {__('Cancel')}
     </Button>,
   ]);
   return (
@@ -174,13 +184,22 @@ const ChangeHostCVModal = ({
           <a href={`/change_host_content_source?host_id=${hostId}`}>{__('change the host\'s content source.')}</a>
         </Alert>
       }
+      {multiEnv &&
+        <Alert
+          variant="warning"
+          ouiaId="multi-env-alert"
+          isInline
+          title={__('This host is associated with multiple content view environments. If you assign a lifecycle environment and content view here, the host will be removed from the other environments.')}
+          style={{ marginBottom: '1rem' }}
+        />
+      }
       <EnvironmentPaths
         userCheckedItems={selectedEnvForHost}
         setUserCheckedItems={handleEnvSelect}
         publishing={false}
         multiSelect={false}
         hostId={hostId}
-        headerText={__('Select environment')}
+        headerText={__('Select lifecycle environment')}
         isDisabled={hostUpdateStatus === STATUS.PENDING}
       />
       <ContentViewSelect
@@ -229,6 +248,7 @@ ChangeHostCVModal.propTypes = {
   hostId: PropTypes.number.isRequired,
   contentSourceId: PropTypes.number,
   hostName: PropTypes.string.isRequired,
+  multiEnv: PropTypes.bool,
 };
 
 ChangeHostCVModal.defaultProps = {
@@ -236,6 +256,7 @@ ChangeHostCVModal.defaultProps = {
   closeModal: () => {},
   hostEnvId: null,
   contentSourceId: null,
+  multiEnv: false,
 };
 
 

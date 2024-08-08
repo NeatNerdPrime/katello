@@ -23,7 +23,7 @@ module Actions
                   plan_action(Actions::Pulp3::Repository::SaveVersion, target_repo, tasks: action.output[:pulp_tasks])
                   copy_actions = []
                   #since we're creating a new version from the first repo, start copying at the 2nd
-                  source_repositories[1..-1].each do |source_repo|
+                  source_repositories[1..].each do |source_repo|
                     # TODO: In a future refactor, can :copy_all be utilized?  Filters should not be needed in this code segment.
                     copy_actions << plan_action(Actions::Pulp3::Repository::CopyContent, source_repo, smart_proxy, target_repo,
                                                 filter_ids: filter_ids, solve_dependencies: solve_dependencies,
@@ -32,6 +32,10 @@ module Actions
                   plan_action(Actions::Pulp3::Repository::SaveVersion, target_repo, tasks: copy_actions.last.output[:pulp_tasks])
                 end
               end
+            elsif source_repositories.first.root.is_container_push
+              copy_action = plan_action(Actions::Pulp3::Repository::CopyContent, source_repositories.first, smart_proxy, target_repo,
+                                        copy_all: true)
+              plan_action(Actions::Pulp3::Repository::SaveVersion, target_repo, tasks: copy_action.output[:pulp_tasks])
             else
               plan_self(source_version_repo_id: source_repositories.first.id,
                         target_repo_id: target_repo.id)

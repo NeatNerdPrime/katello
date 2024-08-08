@@ -64,7 +64,7 @@ module Katello
         sorted_substitutions = substitutions.sort_by { |k, _| k.to_s }.map(&:last)
         repo_name_parts = [content.name,
                            sorted_substitutions].flatten.compact
-        repo_name_parts.join(" ").gsub(/[^a-z0-9\-\._ ]/i, "")
+        repo_name_parts.join(" ").gsub(/[^a-z0-9\-._ ]/i, "")
       end
 
       def path
@@ -83,7 +83,7 @@ module Katello
 
       def feed_url
         return if product.organization.cdn_configuration.export_sync?
-        @feed_url ||= if product.cdn_resource&.respond_to?(:repository_url)
+        @feed_url ||= if product.cdn_resource.respond_to?(:repository_url)
                         product.cdn_resource.repository_url(content_label: content.label, arch: arch, major: version[:major], minor: version[:minor])
                       else
                         product.repo_url(path)

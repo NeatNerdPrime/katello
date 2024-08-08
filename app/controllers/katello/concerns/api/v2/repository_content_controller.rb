@@ -101,9 +101,10 @@ module Katello
       end
 
       def sort_options
-        if default_sort.is_a?(Array)
+        case default_sort
+        when Array
           return [default_sort[0], default_sort[1], {}]
-        elsif default_sort.is_a?(Proc)
+        when Proc
           return [nil, nil, { :custom_sort => default_sort }]
         else
           fail "Unsupported default_sort type"
@@ -145,7 +146,7 @@ module Katello
       def compare_same(collection, content_view_versions = nil)
         cv_version_first = content_view_versions[0]
         collection_ids = collection.in_repositories(Katello::Repository.where(:content_view_version_id => cv_version_first&.id))&.pluck(:id)
-        content_view_versions[1..-1].each do |version|
+        content_view_versions[1..].each do |version|
           collection_version_ids = collection.in_repositories(Katello::Repository.where(:content_view_version_id => version&.id))&.pluck(:id)
           collection_ids = collection_ids.intersection collection_version_ids
         end
